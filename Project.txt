@@ -1,0 +1,398 @@
+JMP main
+JMP isr
+
+opening: DB "Choose your [difficulty:[1)Easy [2)Medium[3)Hard"
+DB 0
+loststr: DB "Nice try gg"
+DB 0
+wonstr: DB "OMG U WON"
+DB 0
+
+block:
+  DB "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
+  DB "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF" 
+  
+str:
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAIAAAAAAACAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAKAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAUAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAARAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+	DB "0"
+    
+str1:
+	DB "AAAAAAAAAAAANAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAASAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAOAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAPAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+    DB "AAGAAAAAAAAAAAAA"
+    DB "AAAAAAAAAAAAAAAA"
+	DB "0"
+    
+stringsolution1: DB "ruick"
+DB 0
+
+stringsolution2: DB "spong"
+DB 0
+
+isr: ;za input sa tastature
+PUSH A
+IN 5
+CMP A, 0
+JNE difficulty
+IN 6
+JMP keysdone
+difficulty:
+IN 6
+CMP A, 49 ; ascii of 1
+JE easy
+CMP A, 50 ; ascii od 2
+JE medium
+CMP A, 51 ; ascii od 3
+JE hard
+CMP A, 65
+JA cmpstr
+
+keysdone:
+MOV A, 1
+OUT 2
+iret:
+POP A
+IRET
+
+
+main:
+MOV A, 1
+OUT 7
+MOV A, 0xA300
+OUT 8
+MOV A, 7
+OUT 9
+MOV C, opening
+MOV D, 0
+
+loop:
+CMPB DL, 32
+JE resetaddr
+loopcont:
+MOV A, D
+OUT 8
+MOVB AH, [C]
+CMPB AH, 0
+JE exit
+MOVB AL, 252
+OUT 9
+ADD D, 2
+INC C
+MOVB AH, [C]
+CMPB AH, '['
+JE move
+JMP loop
+
+move:
+INC C
+ADDB DH, 1
+MOVB DL, 0
+JMP loop
+
+resetaddr:
+ADDB DH, 1
+MOVB DL, 0
+JMP loopcont
+
+
+easy:
+MOV D, 15000
+MOV [0x0C54], D
+JMP endkey
+
+medium:
+MOV D, 10000
+MOV [0x0C54], D 
+JMP endkey
+
+hard:
+MOV D, 5000
+MOV [0x0C54], D
+JMP endkey
+
+endkey:
+MOV A, 1
+OUT 2
+POP A 
+JMP paint
+
+paint:
+MOV A, 3
+OUT 7
+MOV A, 1
+OUT 7
+
+
+str_break_A:
+  MOV C, block
+  MOV D, 0x8820
+  MOV B, 16
+
+tile_set_loop_A:
+  CMP B, 0
+  JE str_loop_start
+  MOV A, D
+  OUT 8
+  MOV A, [C]
+  OUT 9
+  DEC B
+  ADD C, 2
+  ADD D, 2
+  JMP tile_set_loop_A
+  
+str_loop_start:
+  MOV C, str
+  MOV D, 0
+str_loop:
+  MOV A, D
+  OUT 8
+  MOVB AH, [C]
+  CMPB AH, '0'
+  JE gamestart
+  CMPB AH, 'A'
+  JE letter_a
+  MOVB AL, 27
+  JMP skip_a
+  letter_a:
+  MOVB AL, 255
+  skip_a:
+  OUT 9
+  INC C
+  CMPB DL, 30
+  JNE iterator
+  MOVB DL, 0
+  ADDB DH, 1
+  JMP str_loop
+  iterator:
+  	ADD D, 2
+  	JMP str_loop
+
+cmpstr:
+MOV B, stringsolution1
+loopforstring:
+MOVB CL, [B]
+CMPB AL, CL
+JNE cont
+MOVB [B], '*'
+cont:
+INC B
+CMPB CL, 0
+JNE loopforstring
+CMP D, 5
+JE checkifallstar
+JMP gettinginput
+
+checkifallstar:
+MOV A, stringsolution1
+loopcheck:
+MOVB BL, [A]
+CMPB BL, 0
+JE paint1
+CMPB BL, '*' ;cmp za ono ukucano
+JNE lost
+INC A
+JMP loopcheck
+
+
+
+endkey1:
+MOV A, 1
+OUT 2
+POP A 
+JMP paint1
+
+paint1:
+MOV A, 3
+OUT 7
+MOV A, 1
+OUT 7
+
+str_break_A1:
+  MOV C, block
+  MOV D, 0x8820
+  MOV B, 16
+
+tile_set_loop_A1:
+  CMP B, 0
+  JE str_loop_start1
+  MOV A, D
+  OUT 8
+  MOV A, [C]
+  OUT 9
+  DEC B
+  ADD C, 2
+  ADD D, 2
+  JMP tile_set_loop_A1
+  
+str_loop_start1:
+  MOV C, str1
+  MOV D, 0
+  JMP str_loop1
+  
+  str_loop1:
+  MOV A, D
+  OUT 8
+  MOVB AH, [C]
+  CMPB AH, '0'
+  JE gamestart1
+  CMPB AH, 'A'
+  JE letter_a1
+  MOVB AL, 27
+  JMP skip_a1
+  letter_a1:
+  MOVB AL, 255
+  skip_a1:
+  OUT 9
+  INC C
+  CMPB DL, 30
+  JNE iterator1
+  MOVB DL, 0
+  ADDB DH, 1
+  JMP str_loop1
+  iterator1:
+  	ADD D, 2
+  	JMP str_loop1
+
+cmpstr1:
+MOV B, stringsolution2
+loopforstring1:
+MOVB CL, [B]
+CMPB AL, CL
+JNE cont1
+MOVB [B], '*'
+cont1:
+INC B
+CMPB CL, 0
+JNE loopforstring1
+CMP D, 5
+JE checkifallstar1
+JMP gettinginput1
+
+checkifallstar1:
+MOV A, stringsolution2
+loopcheck1:
+MOVB BL, [A]
+CMPB BL, 0
+JE wonfirst
+CMPB BL, '*' ;cmp za ono ukucano
+JNE lost
+INC A
+JMP loopcheck1
+  
+
+
+gamestart:
+MOV A, [0x0C54]
+game:
+DEC A
+CMP A, 0
+JE endlooping
+JMP game
+
+gamestart1:
+MOV A, [0x0C54]
+game1:
+DEC A
+CMP A, 0
+JE endlooping1
+JMP game1
+
+lost:
+MOV A, 3
+OUT 7
+MOV C, loststr
+MOV D, 0
+looplost:
+CMPB DL, 32
+JE resetaddr
+MOV A, D
+OUT 8
+MOVB AH, [C]
+CMPB AH, 0
+JE end
+MOVB AL, 252
+OUT 9
+ADD D, 2
+INC C
+JMP looplost
+
+endlooping:
+MOV D, 0
+MOV A, 3
+OUT 7
+gettinginput:
+IN 5 ; ovo je KBDSTATUS
+CMP A, 0 ; ovde proverava
+JE gettinginput
+IN 6 ; ovo je KBDDATA
+INC D
+JMP cmpstr 
+
+
+
+endlooping1:
+MOV D, 0
+MOV A, 3
+OUT 7
+gettinginput1:
+IN 5 ; ovo je KBDSTATUS
+CMP A, 0 ; ovde proverava
+JE gettinginput1
+IN 6 ; ovo je KBDDATA
+INC D
+JMP cmpstr1 
+
+wonfirst:
+MOV A, 3
+OUT 7
+MOV C, wonstr
+MOV D, 0
+loopwon:
+CMPB DL, 32
+JE resetaddr
+MOV A, D
+OUT 8
+MOVB AH, [C]
+CMPB AH, 0
+JE end
+MOVB AL, 252
+OUT 9
+ADD D, 2
+INC C
+JMP loopwon
+
+exit:
+MOV SP, 0x0FFF
+MOV A, 1
+OUT 0 
+STI
+end:
+MOV D, 0
+HLT
